@@ -557,8 +557,9 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, config):
     # Handle COCO crowds
     # A crowd box in COCO is a bounding box around several instances. Exclude
     # them from training. A crowd box is given a negative class ID.
-    if torch.nonzero(gt_class_ids < 0).size():
-        crowd_ix = torch.nonzero(gt_class_ids < 0)[:, 0]
+    negative_gt_class_ids = torch.nonzero(gt_class_ids < 0)
+    if len(negative_gt_class_ids) > 0:
+        crowd_ix = negative_gt_class_ids[:, 0]
         non_crowd_ix = torch.nonzero(gt_class_ids > 0)[:, 0]
         crowd_boxes = gt_boxes[crowd_ix.data, :]
         crowd_masks = gt_masks[crowd_ix.data, :, :]
@@ -571,7 +572,7 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, config):
         crowd_iou_max = torch.max(crowd_overlaps, dim=1)[0]
         no_crowd_bool = crowd_iou_max < 0.001
     else:
-        no_crowd_bool =  Variable(torch.ByteTensor(proposals.size()[0]*[True]), requires_grad=False)
+        no_crowd_bool = Variable(torch.ByteTensor(proposals.size()[0]*[True]), requires_grad=False)
         if config.GPU_COUNT:
             no_crowd_bool = no_crowd_bool.cuda()
 
