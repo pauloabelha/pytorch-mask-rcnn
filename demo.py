@@ -10,9 +10,14 @@ import matplotlib.pyplot as plt
 import coco
 import utils
 import model as modellib
-import visualize
+import visual
+import argparse
 
 import torch
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-i', dest='input_image')
+args = parser.parse_args()
 
 
 # Root directory of the project
@@ -68,13 +73,16 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 
 # Load a random image from the images folder
 file_names = next(os.walk(IMAGE_DIR))[2]
-image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
+if args.input_image is None or args.input_image == '':
+    image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
+else:
+    image = skimage.io.imread(os.path.join(args.input_image))
 
 # Run detection
 results = model.detect([image])
 
 # Visualize results
 r = results[0]
-visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
+visual.display_instances(image, r['rois'], r['masks'], r['class_ids'],
                             class_names, r['scores'])
 plt.show()

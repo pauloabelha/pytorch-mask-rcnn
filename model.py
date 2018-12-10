@@ -1,7 +1,6 @@
 """
 Mask R-CNN
 The main Mask R-CNN model implemenetation.
-
 Copyright (c) 2017 Matterport, Inc.
 Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
@@ -334,11 +333,9 @@ def proposal_layer(inputs, proposal_count, nms_threshold, anchors, config=None):
     to the second stage. Filtering is done based on anchor scores and
     non-max suppression to remove overlaps. It also applies bounding
     box refinment detals to anchors.
-
     Inputs:
         rpn_probs: [batch, anchors, (bg prob, fg prob)]
         rpn_bbox: [batch, anchors, (dy, dx, log(dh), log(dw))]
-
     Returns:
         Proposals in normalized coordinates [batch, rois, (y1, x1, y2, x2)]
     """
@@ -402,17 +399,14 @@ def proposal_layer(inputs, proposal_count, nms_threshold, anchors, config=None):
 
 def pyramid_roi_align(inputs, pool_size, image_shape):
     """Implements ROI Pooling on multiple levels of the feature pyramid.
-
     Params:
     - pool_size: [height, width] of the output pooled regions. Usually [7, 7]
     - image_shape: [height, width, channels]. Shape of input image in pixels
-
     Inputs:
     - boxes: [batch, num_boxes, (y1, x1, y2, x2)] in normalized
              coordinates.
     - Feature maps: List of feature maps from different levels of the pyramid.
                     Each is [batch, channels, height, width]
-
     Output:
     Pooled regions in the shape: [num_boxes, height, width, channels].
     The width and height are those specific in the pool_shape in the layer
@@ -534,7 +528,6 @@ def bbox_overlaps(boxes1, boxes2):
 def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, config):
     """Subsamples proposals and generates target box refinment, class_ids,
     and masks for each.
-
     Inputs:
     proposals: [batch, N, (y1, x1, y2, x2)] in normalized coordinates. Might
                be zero padded if there are not enough proposals.
@@ -542,7 +535,6 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, config):
     gt_boxes: [batch, MAX_GT_INSTANCES, (y1, x1, y2, x2)] in normalized
               coordinates.
     gt_masks: [batch, height, width, MAX_GT_INSTANCES] of boolean type
-
     Returns: Target ROIs and corresponding class IDs, bounding box shifts,
     and masks.
     rois: [batch, TRAIN_ROIS_PER_IMAGE, (y1, x1, y2, x2)] in normalized
@@ -732,7 +724,6 @@ def clip_to_window(window, boxes):
 def refine_detections(rois, probs, deltas, window, config):
     """Refine classified proposals and filter overlaps and return final
     detections.
-
     Inputs:
         rois: [N, (y1, x1, y2, x2)] in normalized coordinates
         probs: [N, num_classes]. Class probabilities.
@@ -740,7 +731,6 @@ def refine_detections(rois, probs, deltas, window, config):
                 bounding box deltas.
         window: (y1, x1, y2, x2) in image coordinates. The part of the image
             that contains the image excluding the padding.
-
     Returns detections shaped: [N, (y1, x1, y2, x2, class_id, score)]
     """
 
@@ -828,7 +818,6 @@ def refine_detections(rois, probs, deltas, window, config):
 def detection_layer(config, rois, mrcnn_class, mrcnn_bbox, image_meta):
     """Takes classified proposal boxes and their bounding box deltas and
     returns the final detection boxes.
-
     Returns:
     [batch, num_detections, (y1, x1, y2, x2, class_score)] in pixels
     """
@@ -849,11 +838,9 @@ def detection_layer(config, rois, mrcnn_class, mrcnn_bbox, image_meta):
 
 class RPN(nn.Module):
     """Builds the model of Region Proposal Network.
-
     anchors_per_location: number of anchors per pixel in the feature map
     anchor_stride: Controls the density of anchors. Typically 1 (anchors for
                    every pixel in the feature map), or 2 (every other pixel).
-
     Returns:
         rpn_logits: [batch, H, W, 2] Anchor classifier logits (before softmax)
         rpn_probs: [batch, W, W, 2] Anchor classifier probabilities.
@@ -990,7 +977,6 @@ class Mask(nn.Module):
 
 def compute_rpn_class_loss(rpn_match, rpn_class_logits):
     """RPN anchor classifier loss.
-
     rpn_match: [batch, anchors, 1]. Anchor match type. 1=positive,
                -1=negative, 0=neutral anchor.
     rpn_class_logits: [batch, anchors, 2]. RPN classifier logits for FG/BG.
@@ -1017,7 +1003,6 @@ def compute_rpn_class_loss(rpn_match, rpn_class_logits):
 
 def compute_rpn_bbox_loss(target_bbox, rpn_match, rpn_bbox):
     """Return the RPN bounding box loss graph.
-
     target_bbox: [batch, max positive anchors, (dy, dx, log(dh), log(dw))].
         Uses 0 padding to fill in unsed bbox deltas.
     rpn_match: [batch, anchors, 1]. Anchor match type. 1=positive,
@@ -1046,7 +1031,6 @@ def compute_rpn_bbox_loss(target_bbox, rpn_match, rpn_bbox):
 
 def compute_mrcnn_class_loss(target_class_ids, pred_class_logits):
     """Loss for the classifier head of Mask RCNN.
-
     target_class_ids: [batch, num_rois]. Integer class IDs. Uses zero
         padding to fill in the array.
     pred_class_logits: [batch, num_rois, num_classes]
@@ -1065,7 +1049,6 @@ def compute_mrcnn_class_loss(target_class_ids, pred_class_logits):
 
 def compute_mrcnn_bbox_loss(target_bbox, target_class_ids, pred_bbox):
     """Loss for Mask R-CNN bounding box refinement.
-
     target_bbox: [batch, num_rois, (dy, dx, log(dh), log(dw))]
     target_class_ids: [batch, num_rois]. Integer class IDs.
     pred_bbox: [batch, num_rois, num_classes, (dy, dx, log(dh), log(dw))]
@@ -1094,7 +1077,6 @@ def compute_mrcnn_bbox_loss(target_bbox, target_class_ids, pred_bbox):
 
 def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
     """Mask binary cross-entropy loss for the masks head.
-
     target_masks: [batch, num_rois, height, width].
         A float32 tensor of values 0 or 1. Uses zero padding to fill array.
     target_class_ids: [batch, num_rois]. Integer class IDs. Zero padded.
@@ -1139,7 +1121,6 @@ def compute_losses(rpn_match, rpn_bbox, rpn_class_logits, rpn_pred_bbox, target_
 def load_image_gt(dataset, config, image_id, augment=False,
                   use_mini_mask=False):
     """Load and return ground truth data for an image (image, mask, bounding boxes).
-
     augment: If true, apply random image augmentation. Currently, only
         horizontal flipping is offered.
     use_mini_mask: If False, returns full-size masks that are the same height
@@ -1147,7 +1128,6 @@ def load_image_gt(dataset, config, image_id, augment=False,
         1024x1024x100 (for 100 instances). Mini masks are smaller, typically,
         224x224 and are generated by extracting the bounding box of the
         object and resizing it to MINI_MASK_SHAPE.
-
     Returns:
     image: [height, width, 3]
     shape: the original shape of the image before resizing and cropping.
@@ -1198,11 +1178,9 @@ def load_image_gt(dataset, config, image_id, augment=False,
 def build_rpn_targets(image_shape, anchors, gt_class_ids, gt_boxes, config):
     """Given the anchors and GT boxes, compute overlaps and identify positive
     anchors and deltas to refine them to match their corresponding GT boxes.
-
     anchors: [num_anchors, (y1, x1, y2, x2)]
     gt_class_ids: [num_gt_boxes] Integer class IDs.
     gt_boxes: [num_gt_boxes, (y1, x1, y2, x2)]
-
     Returns:
     rpn_match: [N] (int32) matches between anchors and GT boxes.
                1 = positive anchor, -1 = negative anchor, 0 = neutral
@@ -1309,13 +1287,11 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, dataset, config, augment=True):
         """A generator that returns images and corresponding target class ids,
             bounding box deltas, and masks.
-
             dataset: The Dataset object to pick data from
             config: The model config object
             shuffle: If True, shuffles the samples before every epoch
             augment: If True, applies image augmentation to images (currently only
                      horizontal flips are supported)
-
             Returns a Python generator. Upon calling next() on it, the
             generator returns two lists, inputs and outputs. The containtes
             of the lists differs depending on the received arguments:
@@ -1329,7 +1305,6 @@ class Dataset(torch.utils.data.Dataset):
             - gt_masks: [batch, height, width, MAX_GT_INSTANCES]. The height and width
                         are those of the image unless use_mini_mask is True, in which
                         case they are defined in MINI_MASK_SHAPE.
-
             outputs list: Usually empty in regular training. But if detection_targets
                 is True then the outputs list contains target class_ids, bbox deltas,
                 and masks.
@@ -1471,7 +1446,7 @@ class MaskRCNN(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.xavier_uniform(m.weight)
+                nn.init.xavier_uniform_(m.weight)
                 if m.bias is not None:
                     m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
@@ -1494,7 +1469,6 @@ class MaskRCNN(nn.Module):
 
     def set_log_dir(self, model_path=None):
         """Sets the model log directory and epoch counter.
-
         model_path: If None, or a format different from what this code uses
             then set a new log directory and start epochs from 0. Otherwise,
             extract the log directory and the epoch counter from the file
@@ -1571,9 +1545,7 @@ class MaskRCNN(nn.Module):
 
     def detect(self, images):
         """Runs the detection pipeline.
-
         images: List of images, potentially of different sizes.
-
         Returns a list of dicts, one dict per image. The dict contains:
         rois: [N, (y1, x1, y2, x2)] detection bounding boxes
         class_ids: [N] int class IDs
@@ -1592,7 +1564,7 @@ class MaskRCNN(nn.Module):
             molded_images = molded_images.cuda()
 
         # Wrap in variable
-        molded_images = Variable(molded_images, volatile=True)
+        molded_images = Variable(molded_images)
 
         # Run object detection
         detections, mrcnn_mask = self.predict([molded_images, image_metas], mode='inference')
@@ -1967,7 +1939,6 @@ class MaskRCNN(nn.Module):
         as an input to the neural network.
         images: List of image matricies [height,width,depth]. Images can have
             different sizes.
-
         Returns 3 Numpy matricies:
         molded_images: [N, h, w, 3]. Images resized and normalized.
         image_metas: [N, length of meta data]. Details about each image.
@@ -2004,13 +1975,11 @@ class MaskRCNN(nn.Module):
         """Reformats the detections of one image from the format of the neural
         network output to a format suitable for use in the rest of the
         application.
-
         detections: [N, (y1, x1, y2, x2, class_id, score)]
         mrcnn_mask: [N, height, width, num_classes]
         image_shape: [height, width, depth] Original size of the image before resizing
         window: [y1, x1, y2, x2] Box in the image where the real image is
                 excluding the padding.
-
         Returns:
         boxes: [N, (y1, x1, y2, x2)] Bounding boxes in pixels
         class_ids: [N] Integer class IDs for each bounding box
@@ -2069,7 +2038,6 @@ class MaskRCNN(nn.Module):
 def compose_image_meta(image_id, image_shape, window, active_class_ids):
     """Takes attributes of an image and puts them in one 1D array. Use
     parse_image_meta() to parse the values back.
-
     image_id: An int ID of the image. Useful for debugging.
     image_shape: [height, width, channels]
     window: (y1, x1, y2, x2) in pixels. The area of the image where the real
@@ -2102,7 +2070,6 @@ def parse_image_meta(meta):
 def parse_image_meta_graph(meta):
     """Parses a tensor that contains image attributes to its components.
     See compose_image_meta() for more details.
-
     meta: [batch, meta length] where meta length depends on NUM_CLASSES
     """
     image_id = meta[:, 0]
@@ -2123,3 +2090,4 @@ def mold_image(images, config):
 def unmold_image(normalized_images, config):
     """Takes a image normalized with mold() and returns the original."""
     return (normalized_images + config.MEAN_PIXEL).astype(np.uint8)
+
