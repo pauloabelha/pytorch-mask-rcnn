@@ -587,8 +587,9 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, config):
 
     # Subsample ROIs. Aim for 33% positive
     # Positive ROIs
-    if torch.nonzero(positive_roi_bool).size():
-        positive_indices = torch.nonzero(positive_roi_bool)[:, 0]
+    non_zero_roi = torch.nonzero(positive_roi_bool)
+    if len(non_zero_roi) > 0:
+        positive_indices = non_zero_roi[:, 0]
 
         positive_count = int(config.TRAIN_ROIS_PER_IMAGE *
                              config.ROI_POSITIVE_RATIO)
