@@ -425,7 +425,14 @@ def pyramid_roi_align(inputs, pool_size, image_shape):
     feature_maps = inputs[1:]
 
     # Assign each ROI to a level in the pyramid based on the ROI area.
-    y1, x1, y2, x2 = boxes.chunk(4, dim=1)
+    try:
+        y1, x1, y2, x2 = boxes.chunk(4, dim=1)
+    except BaseException as E:
+        # Added by Paulo Ferreira
+        print(boxes.shape)
+        print(E)
+        print('Exception!')
+        raise E
     h = y2 - y1
     w = x2 - x1
 
@@ -646,9 +653,10 @@ def detection_target_layer(proposals, gt_class_ids, gt_boxes, gt_masks, config):
     # 2. Negative ROIs are those with < 0.5 with every GT box. Skip crowds.
     negative_roi_bool = roi_iou_max < 0.5
     negative_roi_bool = negative_roi_bool & no_crowd_bool
+    non_zero_negative_roi_bool = torch.nonzero(negative_roi_bool)
     # Negative ROIs. Add enough to maintain positive:negative ratio.
-    if torch.nonzero(negative_roi_bool).size() and positive_count>0:
-        negative_indices = torch.nonzero(negative_roi_bool)[:, 0]
+    if len(non_zero_negative_roi_bool) > 0 and positive_count>0:
+        negative_indices = non_zero_negative_roi_bool[:, 0]
         r = 1.0 / config.ROI_POSITIVE_RATIO
         negative_count = int(r * positive_count - positive_count)
         rand_idx = torch.randperm(negative_indices.size()[0])
@@ -1834,7 +1842,7 @@ class MaskRCNN(nn.Module):
 
             # Backpropagation
             loss.backward()
-            torch.nn.utils.clip_grad_norm(self.parameters(), 5.0)
+            torch.nn.utils.clip_grad_norm_(self.parameters(), 5.0)
             if (batch_count % self.config.BATCH_SIZE) == 0:
                 optimizer.step()
                 optimizer.zero_grad()
@@ -1843,17 +1851,17 @@ class MaskRCNN(nn.Module):
             # Progress
             printProgressBar(step + 1, steps, prefix="\t{}/{}".format(step + 1, steps),
                              suffix="Complete - loss: {:.5f} - rpn_class_loss: {:.5f} - rpn_bbox_loss: {:.5f} - mrcnn_class_loss: {:.5f} - mrcnn_bbox_loss: {:.5f} - mrcnn_mask_loss: {:.5f}".format(
-                                 loss.data.cpu()[0], rpn_class_loss.data.cpu()[0], rpn_bbox_loss.data.cpu()[0],
-                                 mrcnn_class_loss.data.cpu()[0], mrcnn_bbox_loss.data.cpu()[0],
-                                 mrcnn_mask_loss.data.cpu()[0]), length=10)
+                                 loss.data.cpu().item(), rpn_class_loss.data.cpu().item(), rpn_bbox_loss.data.cpu().item(),
+                                 mrcnn_class_loss.data.cpu().item(), mrcnn_bbox_loss.data.cpu().item(),
+                                 mrcnn_mask_loss.data.cpu().item()), length=10)
 
             # Statistics
-            loss_sum += loss.data.cpu()[0]/steps
-            loss_rpn_class_sum += rpn_class_loss.data.cpu()[0]/steps
-            loss_rpn_bbox_sum += rpn_bbox_loss.data.cpu()[0]/steps
-            loss_mrcnn_class_sum += mrcnn_class_loss.data.cpu()[0]/steps
-            loss_mrcnn_bbox_sum += mrcnn_bbox_loss.data.cpu()[0]/steps
-            loss_mrcnn_mask_sum += mrcnn_mask_loss.data.cpu()[0]/steps
+            loss_sum += loss.data.cpu().item()/steps
+            loss_rpn_class_sum += rpn_class_loss.data.cpu().item()/steps
+            loss_rpn_bbox_sum += rpn_bbox_loss.data.cpu().item()/steps
+            loss_mrcnn_class_sum += mrcnn_class_loss.data.cpu().item()/steps
+            loss_mrcnn_bbox_sum += mrcnn_bbox_loss.data.cpu().item()/steps
+            loss_mrcnn_mask_sum += mrcnn_mask_loss.data.cpu().item()/steps
 
             # Break after 'steps' steps
             if step==steps-1:
